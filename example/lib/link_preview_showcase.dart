@@ -12,7 +12,25 @@ class LinkPreviewShowcase extends StatefulWidget {
 }
 
 class _LinkPreviewShowcaseState extends State<LinkPreviewShowcase> {
-  final editorState = EditorState.blank();
+  late final EditorState editorState;
+  final previewLinks = [
+    'https://www.mongodb.com/cloud/atlas/lp/try3?utm_campaign=ea-ww_acq_atlas_prospecting&utm_source=readthedocs&utm_medium=display&utm_term=atlas&utm_content=code1&ea-publisher=dailydev',
+    'https://twitter.com/elonmusk/status/1733905170445062359',
+    'https://www.youtube.com/watch?v=mbQa2VWcFiI',
+    'https://github.com/AppFlowy-IO'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    editorState = EditorState(
+      document: Document(
+        root: pageNode(
+          children: previewLinks.map((e) => linkPreviewNode(url: e)).toList(),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -32,7 +50,10 @@ class _LinkPreviewShowcaseState extends State<LinkPreviewShowcase> {
           editorState: editorState,
           blockComponentBuilders: {
             ...standardBlockComponentBuilderMap,
-            LinkPreviewBlockKeys.type: LinkPreviewBlockComponentBuilder(),
+            LinkPreviewBlockKeys.type: LinkPreviewBlockComponentBuilder(
+                configuration: BlockComponentConfiguration(
+              padding: (_) => const EdgeInsets.symmetric(vertical: 8.0),
+            )),
           },
           commandShortcutEvents: [
             convertUrlToLinkPreviewBlockCommand,
