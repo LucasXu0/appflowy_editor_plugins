@@ -1,0 +1,40 @@
+name: AppFlowyEditor test
+
+on:
+  push:
+    branches:
+      - "main"
+      - "stable"
+
+  pull_request:
+    branches:
+      - "main"
+      - "stable"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    strategy:
+      matrix:
+        os: [macos-13, macos-12, macos-11, ubuntu-22.04, ubuntu-20.04, windows-2022, windows-2019]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: "3.16.2"
+          cache: true
+
+      - name: Run tests
+        run: |
+          flutter --version
+          flutter pub get
+          flutter analyze .
+          dart format --set-exit-if-changed .
