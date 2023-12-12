@@ -122,11 +122,14 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (image != null)
-                  Image.network(
-                    image,
-                    width: 180,
-                    height: 120,
-                    fit: BoxFit.cover,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      image,
+                      width: 180,
+                      height: 120,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 Expanded(
                   child: Padding(
