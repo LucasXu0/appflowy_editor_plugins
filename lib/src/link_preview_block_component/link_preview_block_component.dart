@@ -20,10 +20,45 @@ Node linkPreviewNode({required String url}) {
   );
 }
 
+typedef LinPreviewBlockComponentMenuBuilder = Widget Function(
+  BuildContext context,
+  Node node,
+  LinkPreviewBlockComponentState state,
+);
+
+typedef LinkPreviewBlockPreviewBuilder = Widget Function(
+  BuildContext context,
+  Node node,
+  String url,
+  String? title,
+  String? description,
+  String? imageUrl,
+);
+
 class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
   LinkPreviewBlockComponentBuilder({
     super.configuration,
+    this.builder,
+    this.errorBuilder,
+    this.loadingBuilder,
+    this.showMenu = false,
+    this.menuBuilder,
   });
+
+  /// The builder for the preview widget.
+  final LinkPreviewBlockPreviewBuilder? builder;
+
+  /// The builder for the error widget.
+  final WidgetBuilder? errorBuilder;
+
+  /// The builder for the loading widget.
+  final WidgetBuilder? loadingBuilder;
+
+  /// Whether to show the menu.
+  final bool showMenu;
+
+  /// The builder for the menu widget.
+  final LinPreviewBlockComponentMenuBuilder? menuBuilder;
 
   @override
   BlockComponentWidget build(BlockComponentContext blockComponentContext) {
@@ -37,6 +72,10 @@ class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
         blockComponentContext,
         state,
       ),
+      builder: builder,
+      errorBuilder: errorBuilder,
+      showMenu: showMenu,
+      menuBuilder: menuBuilder,
     );
   }
 
@@ -53,14 +92,25 @@ class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
     super.showActions,
     super.actionBuilder,
     super.configuration = const BlockComponentConfiguration(),
+    this.builder,
+    this.errorBuilder,
+    this.loadingBuilder,
+    this.showMenu = false,
+    this.menuBuilder,
   });
+
+  final LinkPreviewBlockPreviewBuilder? builder;
+  final WidgetBuilder? errorBuilder;
+  final WidgetBuilder? loadingBuilder;
+  final bool showMenu;
+  final LinPreviewBlockComponentMenuBuilder? menuBuilder;
 
   @override
   State<LinkPreviewBlockComponent> createState() =>
-      _LinkPreviewBlockComponentState();
+      LinkPreviewBlockComponentState();
 }
 
-class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
+class LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
     with BlockComponentConfigurable {
   @override
   BlockComponentConfiguration get configuration => widget.configuration;
@@ -70,10 +120,18 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
 
   late final LinkPreviewParser parser;
   late final Future<void> future;
+  late final WidgetBuilder errorBuilder;
+  late final WidgetBuilder loadingBuilder;
+
+  final showActionsNotifier = ValueNotifier<bool>(false);
+  bool alwaysShowMenu = false;
 
   @override
   void initState() {
     super.initState();
+
+    errorBuilder = widget.errorBuilder ?? _defaultErrorWidget;
+    loadingBuilder = widget.loadingBuilder ?? _defaultLoadingWidget;
 
     parser = LinkPreviewParser(url: url);
     future = parser.start();
@@ -85,9 +143,7 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(
-            child: CircularProgressIndicator.adaptive(),
-          );
+          return loadingBuilder(context);
         }
 
         final title = parser.getContent(LinkPreviewRegex.title);
@@ -95,84 +151,178 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
         final image = parser.getContent(LinkPreviewRegex.image);
 
         if (title == null && description == null && image == null) {
-          return const SizedBox(
-            height: 60,
-            child: Text(
-              'No preview available',
+          return errorBuilder(context);
+        }
+
+        Widget child = widget.builder?.call(
+              context,
+              widget.node,
+              url,
+              title,
+              description,
+              image,
+            ) ??
+            _LinkPreviewWidget(
+              url: url,
+              title: title,
+              description: description,
+              imageUrl: image,
+            );
+
+        child = Padding(
+          padding: padding,
+          child: child,
+        );
+
+        if (widget.showActions && widget.actionBuilder != null) {
+          child = BlockComponentActionWrapper(
+            node: node,
+            actionBuilder: widget.actionBuilder!,
+            child: child,
+          );
+        }
+
+        if (widget.showMenu && widget.menuBuilder != null) {
+          child = MouseRegion(
+            onEnter: (_) => showActionsNotifier.value = true,
+            onExit: (_) {
+              if (!alwaysShowMenu) {
+                showActionsNotifier.value = false;
+              }
+            },
+            hitTestBehavior: HitTestBehavior.opaque,
+            opaque: false,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: showActionsNotifier,
+              builder: (context, value, child) {
+                return Stack(
+                  children: [
+                    child!,
+                    if (value)
+                      widget.menuBuilder!(
+                        context,
+                        widget.node,
+                        this,
+                      ),
+                  ],
+                );
+              },
+              child: child,
             ),
           );
         }
 
-        final theme = Theme.of(context);
-
-        return GestureDetector(
-          onTap: () => launchUrlString(url),
-          child: Container(
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.onSurface,
-              ),
-              borderRadius: BorderRadius.circular(
-                8.0,
-              ),
-            ),
-            margin: padding,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (image != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      image,
-                      width: 180,
-                      height: 120,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (title != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelLarge,
-                            ),
-                          ),
-                        if (description != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ),
-                        Text(
-                          url.toString(),
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return child;
       },
+    );
+  }
+
+  Widget _defaultErrorWidget(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(
+        child: Text(
+          'No preview available',
+        ),
+      ),
+    );
+  }
+
+  Widget _defaultLoadingWidget(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(
+        child: CircularProgressIndicator.adaptive(),
+      ),
+    );
+  }
+}
+
+class _LinkPreviewWidget extends StatelessWidget {
+  const _LinkPreviewWidget({
+    required this.url,
+    this.title,
+    this.description,
+    this.imageUrl,
+  });
+
+  final String? title;
+  final String? description;
+  final String? imageUrl;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: () => launchUrlString(url),
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: theme.colorScheme.onSurface,
+          ),
+          borderRadius: BorderRadius.circular(
+            8.0,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageUrl != null)
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8.0),
+                  bottomLeft: Radius.circular(8.0),
+                ),
+                child: Image.network(
+                  imageUrl!,
+                  width: 180,
+                  height: 120,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (title != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Text(
+                          title!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ),
+                    if (description != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Text(
+                          description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    Text(
+                      url.toString(),
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

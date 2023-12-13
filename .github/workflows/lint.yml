@@ -32,7 +32,15 @@ jobs:
           flutter-version: "3.16.2"
           cache: true
 
-      - name: Run tests
+      - name: Lint package
+        run: |
+          flutter --version
+          flutter pub get
+          flutter analyze .
+          dart format --set-exit-if-changed .
+
+      - name: Link example project
+        working-directory: example
         run: |
           flutter --version
           flutter pub get
