@@ -20,6 +20,11 @@ Node linkPreviewNode({required String url}) {
   );
 }
 
+abstract class LinkPreviewDataCacheInterface {
+  Future<LinkPreviewData?> get(String url);
+  Future<void> set(String url, LinkPreviewData data);
+}
+
 typedef LinPreviewBlockComponentMenuBuilder = Widget Function(
   BuildContext context,
   Node node,
@@ -43,6 +48,7 @@ class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
     this.loadingBuilder,
     this.showMenu = false,
     this.menuBuilder,
+    this.cache,
   });
 
   /// The builder for the preview widget.
@@ -60,6 +66,9 @@ class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
   /// The builder for the menu widget.
   final LinPreviewBlockComponentMenuBuilder? menuBuilder;
 
+  /// customize your own cache if you don't want the link preview block refresh every time
+  final LinkPreviewDataCacheInterface? cache;
+
   @override
   BlockComponentWidget build(BlockComponentContext blockComponentContext) {
     final node = blockComponentContext.node;
@@ -76,6 +85,7 @@ class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
       errorBuilder: errorBuilder,
       showMenu: showMenu,
       menuBuilder: menuBuilder,
+      cache: cache,
     );
   }
 
@@ -97,6 +107,7 @@ class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
     this.loadingBuilder,
     this.showMenu = false,
     this.menuBuilder,
+    this.cache,
   });
 
   final LinkPreviewBlockPreviewBuilder? builder;
@@ -104,6 +115,7 @@ class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
   final WidgetBuilder? loadingBuilder;
   final bool showMenu;
   final LinPreviewBlockComponentMenuBuilder? menuBuilder;
+  final LinkPreviewDataCacheInterface? cache;
 
   @override
   State<LinkPreviewBlockComponent> createState() =>
@@ -133,7 +145,10 @@ class LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
     errorBuilder = widget.errorBuilder ?? _defaultErrorWidget;
     loadingBuilder = widget.loadingBuilder ?? _defaultLoadingWidget;
 
-    parser = LinkPreviewParser(url: url);
+    parser = LinkPreviewParser(
+      url: url,
+      cache: widget.cache,
+    );
     future = parser.start();
   }
 
