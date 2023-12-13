@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor_plugins/appflowy_editor_plugins.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class LinkPreviewBlockKeys {
   const LinkPreviewBlockKeys._();
@@ -60,8 +60,13 @@ class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
       _LinkPreviewBlockComponentState();
 }
 
-class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent> {
-  Uri get uri => Uri.parse(widget.node.attributes[LinkPreviewBlockKeys.url]!);
+class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
+    with BlockComponentConfigurable {
+  @override
+  BlockComponentConfiguration get configuration => widget.configuration;
+  @override
+  Node get node => widget.node;
+  String get url => widget.node.attributes[LinkPreviewBlockKeys.url]!;
 
   late final LinkPreviewParser parser;
   late final Future<void> future;
@@ -70,7 +75,7 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent> {
   void initState() {
     super.initState();
 
-    parser = LinkPreviewParser(uri: uri);
+    parser = LinkPreviewParser(url: url);
     future = parser.start();
   }
 
@@ -101,7 +106,7 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent> {
         final theme = Theme.of(context);
 
         return GestureDetector(
-          onTap: () => launchUrl(uri),
+          onTap: () => launchUrlString(url),
           child: Container(
             clipBehavior: Clip.hardEdge,
             decoration: BoxDecoration(
@@ -112,15 +117,19 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent> {
                 8.0,
               ),
             ),
+            margin: padding,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (image != null)
-                  Image.network(
-                    image,
-                    width: 180,
-                    height: 120,
-                    fit: BoxFit.cover,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      image,
+                      width: 180,
+                      height: 120,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 Expanded(
                   child: Padding(
@@ -150,7 +159,7 @@ class _LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent> {
                             ),
                           ),
                         Text(
-                          uri.toString(),
+                          url.toString(),
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: Colors.grey),

@@ -1,4 +1,4 @@
-name: AppFlowyEditor test
+name: lint
 
 on:
   push:
