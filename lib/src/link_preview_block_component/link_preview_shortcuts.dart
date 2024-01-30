@@ -15,6 +15,7 @@ import 'package:string_validator/string_validator.dart';
 final CommandShortcutEvent convertUrlToLinkPreviewBlockCommand =
     CommandShortcutEvent(
   key: 'convert url to link preview block',
+  getDescription: () => 'Convert the pasted url to a link preview block',
   command: 'ctrl+v',
   macOSCommand: 'cmd+v',
   handler: _convertUrlToLinkPreviewBlockCommandHandler,

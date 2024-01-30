@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  appflowy_editor: ^2.1.0
+  appflowy_editor: ^2.3.1
   http: ^1.1.2
   url_launcher: ^6.2.2
   string_validator: ^1.0.2
