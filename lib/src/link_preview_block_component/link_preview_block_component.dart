@@ -165,24 +165,26 @@ class LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
         final description = parser.getContent(LinkPreviewRegex.description);
         final image = parser.getContent(LinkPreviewRegex.image);
 
-        if (title == null && description == null && image == null) {
-          return errorBuilder(context);
-        }
+        Widget child;
 
-        Widget child = widget.builder?.call(
-              context,
-              widget.node,
-              url,
-              title,
-              description,
-              image,
-            ) ??
-            _LinkPreviewWidget(
-              url: url,
-              title: title,
-              description: description,
-              imageUrl: image,
-            );
+        if (title == null && description == null && image == null) {
+          child = errorBuilder(context);
+        } else {
+          child = widget.builder?.call(
+                context,
+                widget.node,
+                url,
+                title,
+                description,
+                image,
+              ) ??
+              _LinkPreviewWidget(
+                url: url,
+                title: title,
+                description: description,
+                imageUrl: image,
+              );
+        }
 
         child = Padding(
           padding: padding,
