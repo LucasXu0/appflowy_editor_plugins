@@ -1,7 +1,9 @@
-import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor_plugins/appflowy_editor_plugins.dart';
 import 'package:flutter/material.dart';
+
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+
+import 'package:appflowy_editor_plugins/appflowy_editor_plugins.dart';
 
 class LinkPreviewBlockKeys {
   const LinkPreviewBlockKeys._();
@@ -235,11 +237,21 @@ class LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
   }
 
   Widget _defaultErrorWidget(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 60,
-      child: Center(
-        child: Text(
-          'No preview available',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          borderRadius: BorderRadius.circular(
+            8.0,
+          ),
+        ),
+        child: const Center(
+          child: Text(
+            'No preview available',
+          ),
         ),
       ),
     );
