@@ -19,7 +19,7 @@ jobs:
   desktop:
     strategy:
       matrix:
-        os: [macos-13, macos-12, macos-11, ubuntu-22.04, ubuntu-20.04, windows-2022, windows-2019]
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -39,7 +39,7 @@ jobs:
           flutter analyze .
           dart format --set-exit-if-changed .
 
-      - name: Link example project
+      - name: Lint example project
         working-directory: example
         run: |
           flutter --version
